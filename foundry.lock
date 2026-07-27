@@ -1,0 +1,20 @@
+{
+  "lib/ERC721A": {
+    "tag": {
+      "name": "v4.3.0",
+      "rev": "6f8a82a7b2833ad8b2fc7b54349281143a731fdd"
+    }
+  },
+  "lib/forge-std": {
+    "tag": {
+      "name": "v1.16.2",
+      "rev": "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b"
+    }
+  },
+  "lib/openzeppelin-contracts": {
+    "tag": {
+      "name": "v5.6.1",
+      "rev": "5fd1781b1454fd1ef8e722282f86f9293cacf256"
+    }
+  }
+}
