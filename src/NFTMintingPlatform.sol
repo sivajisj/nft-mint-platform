@@ -5,7 +5,9 @@ import {ERC721A} from "ERC721A/ERC721A.sol";
 import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-contract NFTMintingPlatform is ERC721A , Ownable, ERC2981{
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract NFTMintingPlatform is ERC721A, Ownable, ERC2981, ReentrancyGuard {
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 public constant MINT_PRICE = 0.01 ether;
     bytes32 public merkleRoot;
@@ -25,7 +27,7 @@ contract NFTMintingPlatform is ERC721A , Ownable, ERC2981{
         _setDefaultRoyalty(msg.sender, 500); // 5% royalty
     }
 
-    function mint(uint256 quantity) external payable{
+    function mint(uint256 quantity) external payable nonReentrant{
         if (totalSupply() + quantity > MAX_SUPPLY) revert ExceedMaxSupply();
         if (msg.value < MINT_PRICE * quantity) revert InsufficientFunds();
         _mint(msg.sender, quantity);
@@ -33,11 +35,11 @@ contract NFTMintingPlatform is ERC721A , Ownable, ERC2981{
     function toggleAllowListMint() onlyOwner external {
         allowListMintActive = !allowListMintActive;
     }
-    function setMerkleRoot(bytes32 _root) onlyOwner external{
-        merkleRoot = _root;
+    function setMerkleRoot(bytes32 root) onlyOwner external{
+        merkleRoot = root;
     }
 
-    function allowListMint(uint256 quantity, bytes32[] calldata proof)external payable{
+    function allowListMint(uint256 quantity, bytes32[]  calldata proof)external nonReentrant payable{
         if (!allowListMintActive) revert AllowListNotActive();
         if (totalSupply() + quantity > MAX_SUPPLY) revert ExceedMaxSupply();
         if (msg.value < MINT_PRICE * quantity) revert InsufficientFunds();
@@ -50,12 +52,12 @@ contract NFTMintingPlatform is ERC721A , Ownable, ERC2981{
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721A, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
-    function setBaseURI(string calldata _uri) external onlyOwner(){
-        baseTokenURI = _uri;
+    function setBaseURI(string calldata uri) external onlyOwner(){
+        baseTokenURI = uri;
     }
 
-    function setUnrevealedURI(string calldata _uri) external onlyOwner(){
-        unrevealedURI = _uri;
+    function setUnrevealedURI(string calldata uri) external onlyOwner(){
+        unrevealedURI = uri;
     }
 
     function reveal() external onlyOwner(){
@@ -73,4 +75,12 @@ contract NFTMintingPlatform is ERC721A , Ownable, ERC2981{
         }
         
     }
+
+    function withdraw()external nonReentrant onlyOwner{
+        uint256 balance = address(this).balance;
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Withdraw failed");
+    }
+
+    receive() external payable {}
 }
